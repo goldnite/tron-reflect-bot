@@ -1,0 +1,12 @@
+{
+  "name": "Tron-Reflect-Bot",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "scripts": {
+    "bot" : "cls && node index.js"
+  },
+  "dependencies": {
+    "tronweb": "^5.0.0"
+  }
+}
