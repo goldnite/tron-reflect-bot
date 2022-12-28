@@ -3,11 +3,11 @@ const TronWeb = require("tronweb");
 const { createDeflateRaw } = require("zlib");
 const readline = require("readline");
 const HttpProvider = TronWeb.providers.HttpProvider;
-/* Tron mainnet
-const fullHost = new HttpProvider("https://api.trongrid.io");
-const solidityNode = new HttpProvider("https://api.trongrid.io");
-const eventServer = new HttpProvider("https://api.trongrid.io");
-*/
+/* Tron mainnet */
+// const fullHost = new HttpProvider("https://api.trongrid.io");
+// const solidityNode = new HttpProvider("https://api.trongrid.io");
+// const eventServer = new HttpProvider("https://api.trongrid.io");
+
 /* Tron nile testnet */
 const fullHost = new HttpProvider("https://api.nileex.io/");
 const API_KEY = "2357eeaa-71a0-45d3-b724-858103f76cc8";
@@ -26,7 +26,7 @@ const tronWeb = new TronWeb({
   privateKey: reflection_privateKey,
 });
 
-const WAITING_TIME = 60;
+const WAITING_TIME = 2;
 const TRX = 1000000;
 const waitForSeconds = async (sec) => {
   await new Promise((r) =>
@@ -48,42 +48,46 @@ const writeWaitingSeconds = async (sec) => {
   }
 };
 
+const logger = (msg) => {
+  console.log(msg);
+}
+
 const main = async () => {
   try {
-    console.log("\nFetching account balance ...");
+    logger("\nFetching account balance ...");
     const [rw_account, ww_account] = await Promise.all([tronWeb.trx.getAccount(reflection_wallet), tronWeb.trx.getAccount(withdraw_wallet)]);
-    console.log(`Current reflection wallet balance  is ${(rw_account?.balance ?? 0) / TRX} TRX.`);
-    console.log(`Current withdraw wallet balance is ${(ww_account?.balance ?? 0) / TRX} TRX.`);
-    if ((rw_account?.balance ?? 0) >= 1 * TRX) {
+    logger(`Current reflection wallet balance  is ${(rw_account?.balance ?? 0) / TRX} TRX.`);
+    logger(`Current withdraw wallet balance is ${(ww_account?.balance ?? 0) / TRX} TRX.`);
+    if ((rw_account?.balance ?? 0) > 1 * TRX) {
       const sendValue = rw_account.balance - 1 * TRX;
-      console.log(`Sending ${sendValue / TRX} TRX (${sendValue} sun) to withdraw wallet ...`);
+      logger(`Sending ${sendValue / TRX} TRX (${sendValue} sun) to withdraw wallet ...`);
       const txnResp = await tronWeb.trx.sendTransaction(withdraw_wallet, sendValue); // Leave 1 TRX for transaction
       if ((txnResp?.result ?? false) == true) {
-        console.log(`Sending succeed.\nWaiting for transaction validation...`);
-        // console.log(Date.now());
+        logger(`Sending succeed.\nWaiting for transaction validation...`);
+        // logger(Date.now());
         let ww_account_new;
         do {
           ww_account_new = await tronWeb.trx.getAccount(withdraw_wallet);
           await waitForSeconds(WAITING_TIME / 10);
         } while (ww_account_new.balance === ww_account.balance);
-        // console.log(Date.now());
-        console.log(`New withdraw wallet balance is ${ww_account_new.balance / TRX} TRX.`);
+        // logger(Date.now());
+        logger(`New withdraw wallet balance is ${ww_account_new.balance / TRX} TRX.`);
       } else {
-        console.warn(`${Buffer.from(txnResp.message, "hex").toString("utf8")}`);
-        console.warn(`Error Code: ${txnResp.code}`);
-        console.warn(`Tx Id: ${txnResp.txid}`);
+        logger(`${Buffer.from(txnResp.message, "hex").toString("utf8")}`);
+        logger(`Error Code: ${txnResp.code}`);
+        logger(`Tx Id: ${txnResp.txid}`);
       }
-      //   console.log(txnResp);
+      //   logger(txnResp);
     } else {
-      if ((rw_account?.balance ?? 0) > 0) console.log(`Current reflection wallet has too small balance to withdraw.`);
-      else console.log(`Current reflection wallet has no balance.`);
+      if ((rw_account?.balance ?? 0) > 0) logger(`Current reflection wallet has too small balance to withdraw.`);
+      else logger(`Current reflection wallet has no balance.`);
       await writeWaitingSeconds(WAITING_TIME);
       //   await waitForSeconds(WAITING_TIME);
     }
   } catch (err) {
     console.error(err);
   }
-  console.log("");
+  logger("");
   nextTick(main);
 };
 main();
